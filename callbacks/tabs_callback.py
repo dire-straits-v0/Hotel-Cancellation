@@ -2,15 +2,17 @@ from dash import Output, Input, html
 from layouts.industry_info import industry_info_layout
 from layouts.predict_cancellation import predict_cancellation_layout
 
-# Define the callback function for tabs
-def register_callbacks(app):
+def register_tabs_callback(app):
     @app.callback(
-        Output("tab-content", "children"),
+        [
+            Output("industry-info-content", "style"),
+            Output("predict-cancellation-content", "style"),
+        ],
         Input("tabs", "value"),
     )
-    def update_tab_content(tab_name):
+    def switch_tabs(tab_name):
         if tab_name == "industry-info":
-            return industry_info_layout
+            return {"display": "block"}, {"display": "none"}
         elif tab_name == "predict-cancellation":
-            return predict_cancellation_layout
-        return html.Div("404: Tab not found")
+            return {"display": "none"}, {"display": "block"}
+        return {"display": "none"}, {"display": "none"}
