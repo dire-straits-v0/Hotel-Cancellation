@@ -79,6 +79,14 @@ app.layout = html.Div(
             },
             children=[
                 # Left Container
+                html.H3(
+                    "Industry Overview",
+                    style={"textAlign": "center", "marginBottom": "20px", "color": "#333", "marginTop": "20px"},
+                ),
+                html.P(
+                    "Evolution of the industry's reservations throughout the years.",
+                    style={"textAlign": "center", "marginBottom": "20px", "color": "#333"},
+                ),
                 html.Div(
                     style={
                         "width": "48%",
@@ -104,24 +112,33 @@ app.layout = html.Div(
                                 ),
                             ],
                         ),
-                        dcc.Graph(
-                            id="hotel-reservation-evolution",
-                            style={"height": "400px"},
-                        ),
                     ],
                 ),
                         # Right Container (Graph 2)
                 html.Div(
+                        style = {
+                            "display": "flex",  # Use flexbox layout
+                            "justifyContent": "space-between",  # Ensure equal spacing between graphs
+                            "padding": "20px",
+                        },  # Add padding around the container},
+                        children = [
+                            dcc.Graph(
+                                id="hotel-reservation-evolution",
+                                style={"width": "55%"}
+                            ),
+                            dcc.Graph(
+                                id = "year-reservations-cancellation",
+                                figure = graphics.year_reservations_cancellation(df),
+                                style={"width": "55%"}
+                            ),
+                        ],
+                ),
+                html.Hr(
                     style={
-                        "width": "48%", "display": "inline-block", "verticalAlign": "top"
-                    },
-                    children=[
-                        dcc.Graph(
-                            id="year-reservations-cancellation",
-                            figure=graphics.year_reservations_cancellation(df),  # Generate graph
-                            style={"height": "400px", "width": "100%"},  # Adjust graph size
-                        ),
-                    ],
+                        "border": "1px solid gray",  # Thin gray line
+                        "width": "95%",  # Slightly narrower than full width
+                        "margin": "20px auto",  # Center the line with some spacing
+                    }
                 ),
                 html.Div(
                     style={
@@ -132,6 +149,14 @@ app.layout = html.Div(
                         "marginTop":"40px"
                     },
                     children = [
+                        html.H3(
+                            "Lead Time",
+                            style={"textAlign": "center", "marginBottom": "20px", "color": "#333"},
+                        ),
+                        html.P(
+                            "What effect does lead time have on cancellations?",
+                            style={"textAlign": "center", "marginBottom": "20px", "color": "#333"},
+                        ),
                         html.Div(
                             style = {"marginTop":"40px", 
                                      "textAlign": "right",
@@ -142,7 +167,7 @@ app.layout = html.Div(
                                 dcc.Checklist(
                                     id='show-cancellations',
                                     options=[
-                                        {'label': 'Show Cancellations', 'value': 'show_cancelations'}
+                                        {'label': 'Show Total Cancellations', 'value': 'show_cancelations'}
                                     ],
                                     value=[],  # Default is unchecked
                                     style={"display": "inline-block", "fontSize": "16px", "padding": "5px", "textAlign": "right"}  # Visible and styled
@@ -187,9 +212,12 @@ app.layout = html.Div(
                     },
                     children=[
                         html.H3(
-                            "Filter by Hotel Type",
+                            "Deposit Types",
                             style={"textAlign": "center", "marginBottom": "20px", "color": "#333"},
-                            
+                        ),
+                        html.P(
+                            "Filter by hotel type.",
+                            style={"textAlign": "center", "marginBottom": "20px", "color": "#333"},
                         ),
                         dcc.RadioItems(
                             id="hotel-type-filter",
@@ -200,7 +228,8 @@ app.layout = html.Div(
                             ],
                             value="Both",  # Default value
                             inline=True,  # Display horizontally
-                            style={"marginBottom": "20px", "textAlign": "center"},
+                            style={"marginBottom": "20px", "textAlign": "center", "padding": "10px"},
+                            inputStyle={"marginRight": "10px", "marginLeft": "10px"}  # Add space around each radio button
                         ),
                         html.Div(
                             style={

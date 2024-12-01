@@ -16,7 +16,6 @@ def hotel_reservation_evolution(df):
 
     monthly_reservations['arrival_month'] = monthly_reservations['arrival_month'].dt.to_timestamp()
 
-
     fig = px.line(
         monthly_reservations,
         x='arrival_month',
@@ -71,7 +70,7 @@ def year_reservations_cancellation(df):
             'cancellation_status': 'Reservation Status',
             'hotel': 'Hotel Type'
         },
-        title='Total Reservations per Year by Hotel Type, with Cancellation Status',
+        title='Cancellations per Year, per Hotel',
         category_orders={
             'cancellation_status': ["Not Canceled", "Canceled"],  # Set the stacking order
             'hotel': ["City Hotel", "Resort Hotel"]  # Order for hotel types
