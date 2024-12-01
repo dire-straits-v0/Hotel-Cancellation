@@ -28,6 +28,8 @@ slider_marks = {
     i: month.strftime("%Y-%m") for i, month in enumerate(unique_months) if i % 6 == 0
 }
 
+#df = df.dropna()
+
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 
 # Layout of the app
@@ -151,9 +153,29 @@ app.layout = html.Div(
                             id='lead-time-distribution',
                             style = {"height": "400px", "width": "100%"}
                         ),
-
-                    ]
-                )
+                    ],
+                ),
+                html.Div(
+                    style={
+                        "display": "flex",  # Use flexbox layout
+                        "justifyContent": "space-between",  # Ensure equal spacing between graphs
+                        "padding": "20px",  # Add padding around the container
+                    },
+                    children=[
+                        # Pie Chart
+                        dcc.Graph(
+                            id="deposit-type-pie-chart",
+                            figure=graphics.deposit_type_piechart(df),
+                            style={"width": "45%"}  # Adjust width to fit side by side
+                        ),
+                        # Bar Chart
+                        dcc.Graph(
+                            id="deposit-type-bar-chart",
+                            figure=graphics.deposit_type_barchart(df),
+                            style={"width": "45%"}  # Adjust width to fit side by side
+                        ),
+                    ],
+                ),
             ],
         ),
         # Predict Your Cancellation Content (hidden by default)

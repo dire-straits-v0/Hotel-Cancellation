@@ -116,3 +116,51 @@ def lead_time_distribution(df):
     )
     
     return fig
+
+def deposit_type_piechart(df):
+    # Group data for the pie chart (total counts per deposit type)
+    deposit_type_counts = df['deposit_type'].value_counts().reset_index()
+    deposit_type_counts.columns = ['deposit_type', 'count']
+
+    # Create the pie chart
+    fig = px.pie(
+        deposit_type_counts,
+        names='deposit_type',
+        values='count',
+        title='Distribution of Deposit Types',
+        color_discrete_sequence=px.colors.sequential.RdBu  # Customize color scheme
+    )
+    fig.update_traces(textinfo='percent+label')  # Show percentage and labels
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',  # Transparent background
+        plot_bgcolor='rgba(0,0,0,0)',
+    )
+
+    return fig
+
+def deposit_type_barchart(df):
+        # Group data for the bar chart (cancellations per deposit type)
+    cancellations_by_deposit = df[df['is_canceled'] == 1].groupby('deposit_type').size().reset_index(name='cancellations')
+
+    # Create the bar chart
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                x=cancellations_by_deposit['deposit_type'],
+                y=cancellations_by_deposit['cancellations'],
+                marker=dict(color=px.colors.qualitative.Set2),  # Customize color scheme
+                text=cancellations_by_deposit['cancellations'],  # Show values on the bars
+                textposition='outside'  # Position of text
+            )
+        ]
+    )
+    fig.update_layout(
+        title='Cancellations by Deposit Type',
+        xaxis_title='Deposit Type',
+        yaxis_title='Number of Cancellations',
+        paper_bgcolor='rgba(0,0,0,0)',  # Transparent background
+        plot_bgcolor='rgba(0,0,0,0)',
+        yaxis=dict(gridcolor='lightgrey'),  # Add gridlines for better readability
+    )
+
+    return fig
