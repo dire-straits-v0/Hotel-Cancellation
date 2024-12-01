@@ -11,6 +11,7 @@ from plotly.subplots import make_subplots
 
 # Import layouts from separate files
 from callbacks.industry_callbacks import register_industry_callbacks, register_lead_time_callbacks, register_deposit_type_callbacks
+from callbacks.prediction_callbacks import register_prediction_callbacks
 from callbacks.tabs_callback import register_tabs_callback
 
 from layouts.industry_info import industry_info_layout
@@ -37,10 +38,16 @@ with open("src/feature_importances.pkl", "rb") as f:
 with open("src/model.pkl", "rb") as f:
     model_data = pickle.load(f)
 
+with open("src/form_model.pkl", "rb") as f:
+    form_model_data = pickle.load(f)
+
 # Load the saved graph
 feature_importance_graph = graphics.plot_feature_importances(feature_importances)
 model = model_data["model"]
 metrics = model_data["metrics"]
+
+form_model = form_model_data["model"]
+feature_names = form_model_data["feature_names"]
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 
@@ -301,6 +308,76 @@ app.layout = html.Div(
                             figure=feature_importance_graph),
                     ],
                 ),
+                html.Div(
+                    children = [
+                        html.H3("Predict Cancellation", style={"textAlign": "center"}),
+
+                        # Input form
+                        html.Div(
+                            style={"width": "50%", "margin": "0 auto", "padding": "20px"},
+                            children=[
+                                dbc.Row(
+                                    [
+                                        dbc.Col(dbc.Label("Requested Parking Spaces"), width=4),
+                                        dbc.Col(dbc.Input(id="input-parking", type="number", value=1), width=8),
+                                    ],
+                                    className="mb-3",
+                                ),
+                                dbc.Row(
+                                    [
+                                        dbc.Col(dbc.Label("Customer's Previous Cancellations"), width=4),
+                                        dbc.Col(dbc.Input(id="input-previous-cancellations", type="number", value=0), width=8),
+                                    ],
+                                    className="mb-3",
+                                ),
+                                dbc.Row(
+                                    [
+                                        dbc.Col(dbc.Label("Deposit Type"), width=4),
+                                        dbc.Col(
+                                            dcc.Dropdown(
+                                                id="input-deposit-type",
+                                                options=[
+                                                    {"label": "No Deposit", "value": "deposit_type_No Deposit"},
+                                                    {"label": "Non Refund", "value": "deposit_type_Non Refund"},
+                                                    {"label": "Refundable", "value": "deposit_type_Refundable"},
+                                                ],
+                                                value="deposit_type_No Deposit",  # Default selection
+                                            ),
+                                            width=8,
+                                        ),
+                                    ],
+                                    className="mb-3",
+                                ),
+                                dbc.Row(
+                                    [
+                                        dbc.Col(dbc.Label("Average Daily Rate (ADR)"), width=4),
+                                        dbc.Col(dbc.Input(id="input-adr", type="number", value=100), width=8),
+                                    ],
+                                    className="mb-3",
+                                ),
+                                html.Br(),
+                                    dbc.Row(
+                                        dbc.Col(
+                                            dbc.Button(
+                                                "Predict Cancellation", 
+                                                id="predict-button", 
+                                                color="primary",
+                                                style={"width": "100%"}  # Make the button span the full width
+                                            ),
+                                            width=12,
+                                        ),
+                                        className="mb-3",
+                                    ),
+                            ],
+                        ),
+
+                        # Output section
+                        html.Div(
+                            id="prediction-output",
+                            style={"textAlign": "center", "padding": "20px", "fontSize": "20px"},
+                        ),
+                    ],
+                ),
             ],
         ),
     ],
@@ -311,6 +388,7 @@ register_tabs_callback(app)
 register_industry_callbacks(app, df, reverse_month_mapping)
 register_lead_time_callbacks(app,df)
 register_deposit_type_callbacks(app,df)
+register_prediction_callbacks(app, form_model, feature_names)
 
 if __name__ == "__main__":
     app.run_server(debug=True)
