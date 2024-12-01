@@ -1,6 +1,8 @@
 from dash import Dash, dcc, html, Input, Output
-from src import graphics, model, etl
+from src import graphics, etl
 import dash_bootstrap_components as dbc
+import pickle
+import plotly.io as pio
 
 import pandas as pd
 import plotly.express as px
@@ -28,7 +30,17 @@ slider_marks = {
 }
 
 
-#df = df.dropna()
+# Load pre-trained model and feature importances
+with open("src/feature_importances.pkl", "rb") as f:
+    feature_importances = pickle.load(f)
+
+with open("src/model.pkl", "rb") as f:
+    model_data = pickle.load(f)
+
+# Load the saved graph
+feature_importance_graph = graphics.plot_feature_importances(feature_importances)
+model = model_data["model"]
+metrics = model_data["metrics"]
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 
@@ -274,7 +286,21 @@ app.layout = html.Div(
             id="predict-cancellation-content",
             style={"display": "none"},
             children=[
-                html.P("Predict Your Cancellation tab content."),
+                html.H3(
+                    "Cancellation Predictor - Overview",
+                    style={"textAlign": "center", "marginBottom": "20px", "color": "#333", "marginTop": "20px"},
+                ),
+                html.Div(
+                    style = {
+                        "padding": "20px",
+                    },
+                    children = [
+                        graphics.create_metrics_table(metrics), 
+                        dcc.Graph(
+                            id="feature-importance-graph",
+                            figure=feature_importance_graph),
+                    ],
+                ),
             ],
         ),
     ],

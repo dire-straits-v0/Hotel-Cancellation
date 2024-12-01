@@ -1,8 +1,10 @@
 import pandas as pd
+import dash_table
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from plotly.colors import DEFAULT_PLOTLY_COLORS
+
+###########-------------------INDUSTRY TAB VISUALIZATIONS-------------------
 
 def hotel_reservation_evolution(df):
     #HOTEL RESERVATION EVOLUTION THROUGHOUT THE MONTHS
@@ -84,41 +86,6 @@ def year_reservations_cancellation(df):
     )
 
     return fig
-
-#def lead_time_distribution(df):
-
-    # Calculate the total cancellations per lead time
-    # cancellations_per_lead_time = df[df['is_canceled'] == 1].groupby('lead_time').size().reset_index(name='cancellations')
-    
-    # # Create the histogram with Plotly Express
-    # fig = px.histogram(df, x="lead_time", color="hotel", marginal="box", nbins=50,
-    #                    title="Distribution of Lead Time by Hotel Type",
-    #                    labels={"lead_time": "Lead Time (Days)", "hotel": "Hotel Type"},
-    #                    color_discrete_sequence=None)
-    
-    # # Add the line trace for total cancellations
-    # fig.add_trace(
-    #     go.Scatter(
-    #         x=cancellations_per_lead_time['lead_time'],
-    #         y=cancellations_per_lead_time['cancellations'],
-    #         mode='lines+markers',
-    #         name='Total Cancellations',
-    #         line=dict(color='red', width=2, dash='dash')  # Customize the line style
-    #     )
-    # )
-    # # Update the layout
-    # fig.update_layout(
-    #     paper_bgcolor='rgba(0,0,0,0)',  # Transparent background for the entire figure
-    #     plot_bgcolor='rgba(0,0,0,0)',
-    #     yaxis=dict(
-    #         title="Count",
-    #         gridcolor='lightgrey',  # Y-axis gridline color
-    #         zerolinecolor='green'   # Y-axis zero line color
-    #     ),
-    #     xaxis=dict(title="Lead Time (Days)")
-    # )
-    
-    # return fig
 
 def lead_time_distribution(df, show_cancellations=False):
     # Create the base figure with secondary y-axis
@@ -371,3 +338,85 @@ def reservation_flow_sankey(filtered_df):
 
     return fig
 
+###########-------------------PREDICTION TAB VISUALIZATIONS-------------------
+
+def plot_feature_importances(feature_importances: dict, top_n: int = 10):
+    """
+    Generate an interactive graph of feature importances using Plotly Express.
+
+    Parameters:
+    - feature_importances (dict): Dictionary of feature names and their importances.
+    - top_n (int): Number of top features to display.
+
+    Returns:
+    - fig (plotly.graph_objects.Figure): The Plotly figure object for feature importance graph.
+    """
+    # Create a DataFrame for easier grouping
+    importance_df = pd.DataFrame(list(feature_importances.items()), columns=["Feature", "Importance"])
+
+    # Group dummy variables by their original feature name
+    importance_df['BaseFeature'] = importance_df['Feature'].str.split('.').str[0]
+
+    # Aggregate importance by summing up contributions from dummy variables
+    grouped_importances = (
+        importance_df.groupby('BaseFeature')['Importance']
+        .sum()
+        .reset_index()
+        .sort_values(by="Importance", ascending=False)  # Sort by descending importance
+    )
+
+    # Select the top N features
+    top_features = grouped_importances.head(top_n)
+
+    # Create the bar chart with Plotly Express
+    fig = px.bar(
+        top_features,
+        x="Importance",
+        y="BaseFeature",
+        orientation="h",
+        labels={"Importance": "Importance", "BaseFeature": "Feature"},
+        title=f"Top {top_n} Feature Importances",
+        color="Importance",  # Add color based on importance
+        color_continuous_scale="Blues"  # Use a blue color scale
+    )
+
+    # Update layout for better readability
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',  # Transparent background for the entire figure
+        plot_bgcolor='rgba(0,0,0,0)',  # Transparent plot area
+        xaxis_title="Importance",
+        yaxis_title="Feature",
+        showlegend=False,
+    )
+    
+    return fig
+
+# Prepare the metrics data
+def prepare_metrics_table(metrics):
+    return [{"Metric": metric_name, "Value": f"{metric_value:.2f}"}
+            for metric_name, metric_value in metrics.items()
+            if metric_name != "classification_report"]
+
+# Create the metrics table
+def create_metrics_table(metrics):
+    metrics_data = prepare_metrics_table(metrics)
+    return dash_table.DataTable(
+        data=metrics_data,
+        columns=[
+            {"name": "Metric", "id": "Metric"},
+            {"name": "Value", "id": "Value"},
+        ],
+        style_table={"width": "50%", "margin": "0 auto", "padding": "10px"},
+        style_header={
+            "backgroundColor": "#f4f4f4",
+            "fontWeight": "bold",
+            "textAlign": "center",
+        },
+        style_cell={
+            "textAlign": "center",
+            "padding": "10px",
+        },
+        style_data={
+            "backgroundColor": "#fafafa",
+        },
+    )
