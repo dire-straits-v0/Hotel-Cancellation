@@ -163,10 +163,12 @@ app.layout = html.Div(
                                 dcc.Graph(
                                     id="lead-time-cancellation-scatter",
                                     figure=graphics.lead_time_cancellation_scatter(df),  # Call the scatter plot function
+                                    style={"width": "55%"}
                             ),
                                 dcc.Graph(
                                     id = "lead-time-cancellation-heatmap",
                                     figure = graphics.lead_time_cancellation_heatmap(df),
+                                    style={"width": "45%"}
                                 ),
                             ],
                         ),

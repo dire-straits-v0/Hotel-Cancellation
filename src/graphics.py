@@ -1,7 +1,8 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-
+from plotly.subplots import make_subplots
+from plotly.colors import DEFAULT_PLOTLY_COLORS
 
 def hotel_reservation_evolution(df):
     #HOTEL RESERVATION EVOLUTION THROUGHOUT THE MONTHS
@@ -30,8 +31,6 @@ def hotel_reservation_evolution(df):
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',  # Transparent background for the entire figure
         plot_bgcolor='rgba(0,0,0,0)',
-        height = 500,
-        width = 750,
         yaxis=dict(
             gridcolor='lightgrey',  # Y-axis gridline color
             zerolinecolor='green'   # Y-axis zero line color
@@ -83,41 +82,93 @@ def year_reservations_cancellation(df):
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',  # Transparent background for the entire figure
         plot_bgcolor='rgba(0,0,0,0)',
-        height = 500,
-        width = 750
     )
 
     return fig
 
-def lead_time_distribution(df):
+#def lead_time_distribution(df):
+
     # Calculate the total cancellations per lead time
-    cancellations_per_lead_time = df[df['is_canceled'] == 1].groupby('lead_time').size().reset_index(name='cancellations')
+    # cancellations_per_lead_time = df[df['is_canceled'] == 1].groupby('lead_time').size().reset_index(name='cancellations')
     
-    # Create the histogram with Plotly Express
-    fig = px.histogram(df, x="lead_time", color="hotel", marginal="box", nbins=50,
-                       title="Distribution of Lead Time by Hotel Type",
-                       labels={"lead_time": "Lead Time (Days)", "hotel": "Hotel Type"})
+    # # Create the histogram with Plotly Express
+    # fig = px.histogram(df, x="lead_time", color="hotel", marginal="box", nbins=50,
+    #                    title="Distribution of Lead Time by Hotel Type",
+    #                    labels={"lead_time": "Lead Time (Days)", "hotel": "Hotel Type"},
+    #                    color_discrete_sequence=None)
     
-    # Add the line trace for total cancellations
-    fig.add_trace(
-        go.Scatter(
+    # # Add the line trace for total cancellations
+    # fig.add_trace(
+    #     go.Scatter(
+    #         x=cancellations_per_lead_time['lead_time'],
+    #         y=cancellations_per_lead_time['cancellations'],
+    #         mode='lines+markers',
+    #         name='Total Cancellations',
+    #         line=dict(color='red', width=2, dash='dash')  # Customize the line style
+    #     )
+    # )
+    # # Update the layout
+    # fig.update_layout(
+    #     paper_bgcolor='rgba(0,0,0,0)',  # Transparent background for the entire figure
+    #     plot_bgcolor='rgba(0,0,0,0)',
+    #     yaxis=dict(
+    #         title="Count",
+    #         gridcolor='lightgrey',  # Y-axis gridline color
+    #         zerolinecolor='green'   # Y-axis zero line color
+    #     ),
+    #     xaxis=dict(title="Lead Time (Days)")
+    # )
+    
+    # return fig
+
+def lead_time_distribution(df, show_cancellations=False):
+    # Create the base figure with secondary y-axis
+    color_map = {
+        "City Hotel": "#636EFA",
+        "Resort Hotel": "#EF553B",     
+    }
+    
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    
+    # Add histograms for City Hotel and Resort Hotel
+    for hotel_type, color in zip(df['hotel'].unique(), [None, None]):  # Default Plotly colors
+        hotel_data = df[df['hotel'] == hotel_type]
+        histogram = go.Histogram(
+            x=hotel_data['lead_time'],
+            nbinsx=50,
+            name=f'Lead Time ({hotel_type})',
+            marker_color=color_map[hotel_type],
+            opacity=0.7
+        )
+        fig.add_trace(histogram, secondary_y=False)
+    
+    # Conditionally add the cancellation line
+    if show_cancellations:
+        cancellations_per_lead_time = (
+            df[df['is_canceled'] == 1]
+            .groupby('lead_time')
+            .size()
+            .reset_index(name='cancellations')
+        )
+        line = go.Scatter(
             x=cancellations_per_lead_time['lead_time'],
             y=cancellations_per_lead_time['cancellations'],
             mode='lines+markers',
             name='Total Cancellations',
-            line=dict(color='red', width=2, dash='dash')  # Customize the line style
+            line=dict(color='grey', width=2, dash='dot')
         )
-    )
-    # Update the layout
+        fig.add_trace(line, secondary_y=True)
+    
+    # Update layout
     fig.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',  # Transparent background for the entire figure
+        barmode="overlay",
+        title="Lead Time Distribution with Optional Cancellation Line",
+        xaxis_title="Lead Time (Days)",
+        yaxis=dict(title="Count (Reservations)"),
+        yaxis2=dict(title="Total Cancellations", overlaying="y", side="right"),
+        legend=dict(title="Metrics"),
+        paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        yaxis=dict(
-            title="Count",
-            gridcolor='lightgrey',  # Y-axis gridline color
-            zerolinecolor='green'   # Y-axis zero line color
-        ),
-        xaxis=dict(title="Lead Time (Days)")
     )
     
     return fig
@@ -143,8 +194,6 @@ def lead_time_cancellation_scatter(df):
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',  # Transparent background for the entire figure
         plot_bgcolor='rgba(0,0,0,0)',
-        height = 500,
-        width = 750,
         yaxis=dict(
             gridcolor='lightgrey',  # Y-axis gridline color
         )
@@ -246,56 +295,6 @@ def deposit_type_barchart(filtered_df):
         yaxis=dict(title='Percentage of Reservations (%)', tickformat=".1f"),
         xaxis=dict(title='Deposit Type'),
         legend_title_text='Reservation Status'
-    )
-
-    return fig
-
-
-def reservation_flow_sankey_with_percentages(filtered_df):
-    # Group data for Sankey diagram
-    sankey_data = filtered_df.groupby(['deposit_type', 'is_canceled']).size().reset_index(name='count')
-
-    # Calculate percentages for each link
-    total_count = sankey_data['count'].sum()
-    sankey_data['percentage'] = (sankey_data['count'] / total_count) * 100
-
-    # Prepare node and link data
-    deposit_types = sankey_data['deposit_type'].unique()
-    node_labels = list(deposit_types) + ["Canceled", "Not Canceled"]
-    deposit_indices = {name: idx for idx, name in enumerate(deposit_types)}
-    cancel_indices = {"Canceled": len(deposit_types), "Not Canceled": len(deposit_types) + 1}
-
-    # Create source and target mappings
-    sankey_data['source'] = sankey_data['deposit_type'].map(deposit_indices)
-    sankey_data['target'] = sankey_data['is_canceled'].map(lambda x: cancel_indices["Canceled"] if x == 1 else cancel_indices["Not Canceled"])
-
-    # Add percentage to hover text
-    sankey_data['hover_text'] = sankey_data.apply(
-        lambda row: f"{row['count']} ({row['percentage']:.1f}%)",
-        axis=1
-    )
-
-    # Create the Sankey diagram
-    fig = go.Figure(data=[go.Sankey(
-        node=dict(
-            pad=15,
-            thickness=20,
-            line=dict(color="black", width=0.5),
-            label=node_labels,
-        ),
-        link=dict(
-            source=sankey_data['source'],
-            target=sankey_data['target'],
-            value=sankey_data['count'],
-            customdata=sankey_data['hover_text'],  # Pass the hover text
-            hovertemplate='%{customdata}<extra></extra>',  # Display hover text
-        )
-    )])
-
-    # Update layout
-    fig.update_layout(
-        title_text="Reservation Flow by Deposit Type and Cancellation Status (with Percentages)",
-        font_size=10
     )
 
     return fig
