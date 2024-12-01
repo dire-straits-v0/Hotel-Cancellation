@@ -9,7 +9,9 @@ from plotly.subplots import make_subplots
 
 # Import layouts from separate files
 from callbacks.industry_callbacks import register_industry_callbacks
+from callbacks.industry_callbacks import register_lead_time_callbacks
 from callbacks.tabs_callback import register_tabs_callback
+
 from layouts.industry_info import industry_info_layout
 from layouts.predict_cancellation import predict_cancellation_layout
 
@@ -69,21 +71,89 @@ app.layout = html.Div(
                 # Industry Information Content (static but dynamically displayed)
         html.Div(
             id="industry-info-content",
-            style={"display": "block"},
+            style={
+                "display": "flex",  # Horizontal layout
+                "width": "100%",  # Ensure full width of the screen
+            },
             children=[
-                html.P(
-                    "Select Date Range",
-                    style={"fontSize": "14px", "textAlign": "center"},
+                # Left Container
+                html.Div(
+                    style={
+                        "width": "48%",
+                        "display": "inline-block",
+                        "verticalAlign": "top",
+                        "padding": "10px"
+                    },
+                    children=[
+                        html.Div(
+                            style={"marginBottom": "20px"},
+                            children=[
+                                html.P(
+                                    "Select Date Range",
+                                    style={"fontSize": "14px", "textAlign": "center"},
+                                ),
+                                dcc.RangeSlider(
+                                    id="month-range-slider",
+                                    min=0,
+                                    max=len(unique_months) - 1,
+                                    value=[0, len(unique_months) - 1],
+                                    marks=slider_marks,
+                                    tooltip={"placement": "bottom", "always_visible": True},
+                                ),
+                            ],
+                        ),
+                        dcc.Graph(
+                            id="hotel-reservation-evolution",
+                            style={"height": "400px"},
+                        ),
+                    ],
                 ),
-                dcc.RangeSlider(
-                    id="month-range-slider",
-                    min=0,
-                    max=len(unique_months) - 1,
-                    value=[0, len(unique_months) - 1],
-                    marks=slider_marks,
-                    tooltip={"placement": "bottom", "always_visible": True},
+                        # Right Container (Graph 2)
+                html.Div(
+                    style={
+                        "width": "48%", "display": "inline-block", "verticalAlign": "top"
+                    },
+                    children=[
+                        dcc.Graph(
+                            id="year-reservations-cancellation",
+                            figure=graphics.year_reservations_cancellation(df),  # Generate graph
+                            style={"height": "400px", "width": "100%"},  # Adjust graph size
+                        ),
+                    ],
                 ),
-                dcc.Graph(id="hotel-reservation-evolution"),
+                html.Div(
+                    style={
+                        "display": "flex",  # Flexbox layout
+                        "flexDirection": "column",  # Stack vertically
+                        "alignItems": "right",  # Center-align content horizontally
+                        "width": "100%",  # Full width
+                        "marginTop":"40px"
+                    },
+                    children = [
+                        html.Div(
+                            style = {"marginTop":"40px", 
+                                     "textAlign": "right",
+                                    "backgroundColor": "rgba(240, 240, 240, 0.8)",  # Optional light background
+                                    "borderRadius": "5px", 
+                                     },
+                            children = [
+                                dcc.Checklist(
+                                    id='show-cancellations',
+                                    options=[
+                                        {'label': 'Show Cancellations', 'value': 'show_cancelations'}
+                                    ],
+                                    value=[],  # Default is unchecked
+                                    style={"display": "inline-block", "fontSize": "16px", "padding": "5px", "textAlign": "right"}  # Visible and styled
+                                ),
+                            ],
+                        ),
+                        dcc.Graph(
+                            id='lead-time-distribution',
+                            style = {"height": "400px", "width": "100%"}
+                        ),
+
+                    ]
+                )
             ],
         ),
         # Predict Your Cancellation Content (hidden by default)
@@ -100,6 +170,7 @@ app.layout = html.Div(
 # Register callbacks
 register_tabs_callback(app)
 register_industry_callbacks(app, df, reverse_month_mapping)
+register_lead_time_callbacks(app,df)
 
 if __name__ == "__main__":
     app.run_server(debug=True)
