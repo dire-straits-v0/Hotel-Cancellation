@@ -304,6 +304,11 @@ def reservation_flow_sankey(filtered_df):
     # Prepare data for Sankey
     sankey_data = filtered_df.groupby(['deposit_type', 'is_canceled']).size().reset_index(name='count')
 
+    # Calculate percentages
+    total_count = sankey_data['count'].sum()
+    sankey_data['percentage'] = (sankey_data['count'] / total_count) * 100
+
+    # Map "is_canceled" to labels
     sankey_data['is_canceled_label'] = sankey_data['is_canceled'].replace({
         0: "Not Canceled",
         1: "Canceled"
@@ -329,7 +334,13 @@ def reservation_flow_sankey(filtered_df):
         custom_colors["Not Canceled"]  # Custom medium-dark blue for Not Canceled
     ]
 
-    # Define source, target, and value data for Sankey links
+    # Prepare source, target, and value data for Sankey links
+    sources = [0, 1, 2, 0, 1, 2]  # Indices of source nodes
+    targets = [3, 3, 3, 4, 4, 4]  # Indices of target nodes
+    values = sankey_data['count'].tolist()
+    percentages = sankey_data['percentage'].tolist()
+
+    # Create the Sankey diagram
     fig = go.Figure(data=[go.Sankey(
         node=dict(
             pad=15,
@@ -339,16 +350,23 @@ def reservation_flow_sankey(filtered_df):
             color=node_colors  # Apply custom node colors
         ),
         link=dict(
-            source=[0, 1, 2, 0, 1, 2],  # Indices of source nodes
-            target=[3, 3, 3, 4, 4, 4],  # Indices of target nodes
-            value=sankey_data['count'].tolist(),  # Values for the links
-            color="rgba(150, 150, 150, 0.4)"  # Light transparent gray for flows
+            source=sources,  # Source indices
+            target=targets,  # Target indices
+            value=values,  # Flow values
+            color="rgba(150, 150, 150, 0.4)",  # Light transparent gray for flows
+            customdata=percentages,  # Include percentages in hover data
+            hovertemplate=(
+                "Source: %{source.label}<br>" +
+                "Target: %{target.label}<br>" +
+                "Count: %{value}<br>" +
+                "Percentage: %{customdata:.2f}%<extra></extra>"
+            )
         )
     )])
 
     # Update layout
     fig.update_layout(
-        title_text="Reservation Flow by Deposit Type and Cancellation Status",
+        title_text="Reservation Flow by Deposit Type and Cancellation Status (with Percentages)",
         font_size=12,
         paper_bgcolor='rgba(0,0,0,0)',  # Transparent background
     )
