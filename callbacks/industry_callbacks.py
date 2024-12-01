@@ -101,6 +101,6 @@ def register_deposit_type_callbacks(app,df):
 
         pie_chart = graphics.deposit_type_piechart(filtered_df)
         bar_chart = graphics.deposit_type_barchart(filtered_df)
-        sankey_chart = graphics.reservation_flow_sankey_with_percentages(filtered_df)
+        sankey_chart = graphics.reservation_flow_sankey(filtered_df)
 
         return pie_chart, bar_chart, sankey_chart

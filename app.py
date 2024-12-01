@@ -153,6 +153,23 @@ app.layout = html.Div(
                             id='lead-time-distribution',
                             style = {"height": "400px", "width": "100%"}
                         ),
+                        html.Div(
+                            style = {
+                                "display": "flex",  # Use flexbox layout
+                                "justifyContent": "space-between",  # Ensure equal spacing between graphs
+                                "padding": "20px",
+                              },  # Add padding around the container},
+                            children = [
+                                dcc.Graph(
+                                    id="lead-time-cancellation-scatter",
+                                    figure=graphics.lead_time_cancellation_scatter(df),  # Call the scatter plot function
+                            ),
+                                dcc.Graph(
+                                    id = "lead-time-cancellation-heatmap",
+                                    figure = graphics.lead_time_cancellation_heatmap(df),
+                                ),
+                            ],
+                        ),
                     ],
                 ),
                 html.Hr(

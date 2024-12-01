@@ -42,6 +42,11 @@ def hotel_reservation_evolution(df):
 
 def year_reservations_cancellation(df):
 
+    custom_colors = {
+        "Not Canceled": "#377eb8",  # Medium-dark blue (~level 20 in the heatmap legend)
+        "Canceled": "#a6cee3",      # Light blue (~level 10 in the heatmap legend)
+    }
+
     # Extract the year from arrival_date
     df['arrival_year'] = df['arrival_date'].dt.year
 
@@ -71,8 +76,8 @@ def year_reservations_cancellation(df):
         category_orders={
             'cancellation_status': ["Not Canceled", "Canceled"],  # Set the stacking order
             'hotel': ["City Hotel", "Resort Hotel"]  # Order for hotel types
-        }
-        #color_discrete_map=custom_colors_right  # Uncomment to apply custom colors
+        },
+        color_discrete_map=custom_colors  # Uncomment to apply custom colors
     )
 
     fig.update_layout(
@@ -117,8 +122,75 @@ def lead_time_distribution(df):
     
     return fig
 
+def lead_time_cancellation_scatter(df):
+    lead_time_cancellation = df.groupby(['lead_time', 'hotel']).agg(
+        cancellation_rate=('is_canceled', 'mean')
+    ).reset_index()
+
+    # Create the scatter plot with color by hotel type
+    fig = px.scatter(
+        lead_time_cancellation,
+        x="lead_time",
+        y="cancellation_rate",
+        color="hotel",
+        title="Cancellation Rate vs. Lead Time by Hotel Type",
+        labels={
+            "lead_time": "Lead Time (Days)",
+            "cancellation_rate": "Cancellation Rate",
+            "hotel": "Hotel Type"
+        }
+    )
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',  # Transparent background for the entire figure
+        plot_bgcolor='rgba(0,0,0,0)',
+        height = 500,
+        width = 750,
+        yaxis=dict(
+            gridcolor='lightgrey',  # Y-axis gridline color
+        )
+    )
+
+    # Format y-axis to show percentages
+    fig.update_yaxes(tickformat=".0%")
+
+    # Show the plot
+    return fig
+
+def lead_time_cancellation_heatmap(df):
+    # Group by lead_time and calculate cancellation rate
+    heatmap_data = df.groupby('lead_time')['is_canceled'].mean().reset_index()
+    heatmap_data['cancellation_rate'] = heatmap_data['is_canceled'] * 100
+
+    custom_colorscale = [
+        [0.0, "lightgray"],  # Start at light gray
+        [0.15, "lightgray"],  # 15 corresponds to 15% of normalized range
+        [0.15, "blue"],  # Transition to blue
+        [1.0, "darkblue"],  # End at dark blue
+    ]
+
+    # Create heatmap
+    fig = px.density_heatmap(
+        heatmap_data,
+        x='lead_time',
+        y='cancellation_rate',
+        color_continuous_scale='Blues',
+        labels={
+            'lead_time': 'Lead Time (Days)',
+            'cancellation_rate': 'Cancellation Rate (%)',
+        },
+        title='Cancellation Rate by Lead Time'
+    )
+
+    return fig
 
 def deposit_type_piechart(filtered_df):
+
+    custom_colors = {
+        "No Deposit": "#8c0650",       # Custom color for "No Deposit"
+        "Non Refund": "#c90672",       # Custom color for "Non-Refundable"
+        "Refundable": "#ff038e"        # Custom color for "Refundable"
+    }
+   
     deposit_type_counts = filtered_df['deposit_type'].value_counts().reset_index()
     deposit_type_counts.columns = ['deposit_type', 'count']
 
@@ -127,8 +199,9 @@ def deposit_type_piechart(filtered_df):
         names='deposit_type',
         values='count',
         title='Distribution of Deposit Types',
-        color_discrete_sequence=px.colors.sequential.RdBu
+        color_discrete_map=custom_colors
     )
+
     fig.update_traces(textinfo='percent+label')
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
@@ -138,6 +211,11 @@ def deposit_type_piechart(filtered_df):
     return fig
 
 def deposit_type_barchart(filtered_df):
+    custom_colors = {
+        "Not Canceled": "#377eb8",  # Medium-dark blue (~level 20 in the heatmap legend)
+        "Canceled": "#a6cee3",      # Light blue (~level 10 in the heatmap legend)
+    }
+    
     filtered_df['cancellation_status'] = filtered_df['is_canceled'].replace({0: 'Not Canceled', 1: 'Canceled'})
 
     cancellations_by_deposit = filtered_df.groupby(['deposit_type', 'cancellation_status']).size().reset_index(name='count')
@@ -158,7 +236,8 @@ def deposit_type_barchart(filtered_df):
         category_orders={
             'cancellation_status': ["Not Canceled", "Canceled"]
         },
-        title='Reservations by Deposit Type and Cancellation Status'
+        title='Reservations by Deposit Type and Cancellation Status',
+        color_discrete_map=custom_colors
     )
 
     fig.update_layout(
@@ -172,49 +251,9 @@ def deposit_type_barchart(filtered_df):
     return fig
 
 
-def lead_time_cancellation_heatmap(df):
-    # Group by lead_time and calculate cancellation rate
-    heatmap_data = df.groupby('lead_time')['is_canceled'].mean().reset_index()
-    heatmap_data['cancellation_rate'] = heatmap_data['is_canceled'] * 100
-
-    # Create heatmap
-    fig = px.density_heatmap(
-        heatmap_data,
-        x='lead_time',
-        y='cancellation_rate',
-        color_continuous_scale='RdBu',
-        labels={
-            'lead_time': 'Lead Time (Days)',
-            'cancellation_rate': 'Cancellation Rate (%)',
-        },
-        title='Cancellation Rate by Lead Time'
-    )
-
-    return fig
-
-def reservation_flow_sankey(filtered_df):
-    sankey_data = filtered_df.groupby(['deposit_type', 'is_canceled']).size().reset_index(name='count')
-
-    fig = go.Figure(data=[go.Sankey(
-        node=dict(
-            pad=15,
-            thickness=20,
-            line=dict(color="black", width=0.5),
-            label=["No Deposit", "Non Refund", "Refundable", "Canceled", "Not Canceled"]
-        ),
-        link=dict(
-            source=[0, 1, 2, 0, 1, 2],
-            target=[3, 3, 3, 4, 4, 4],
-            value=sankey_data['count'].tolist(),
-        )
-    )])
-
-    fig.update_layout(title_text="Reservation Flow by Deposit Type and Cancellation Status")
-    return fig
-
-def reservation_flow_sankey_with_percentages(df):
+def reservation_flow_sankey_with_percentages(filtered_df):
     # Group data for Sankey diagram
-    sankey_data = df.groupby(['deposit_type', 'is_canceled']).size().reset_index(name='count')
+    sankey_data = filtered_df.groupby(['deposit_type', 'is_canceled']).size().reset_index(name='count')
 
     # Calculate percentages for each link
     total_count = sankey_data['count'].sum()
@@ -257,6 +296,61 @@ def reservation_flow_sankey_with_percentages(df):
     fig.update_layout(
         title_text="Reservation Flow by Deposit Type and Cancellation Status (with Percentages)",
         font_size=10
+    )
+
+    return fig
+
+def reservation_flow_sankey(filtered_df):
+    # Prepare data for Sankey
+    sankey_data = filtered_df.groupby(['deposit_type', 'is_canceled']).size().reset_index(name='count')
+
+    sankey_data['is_canceled_label'] = sankey_data['is_canceled'].replace({
+        0: "Not Canceled",
+        1: "Canceled"
+    })
+
+    # Define node labels
+    node_labels = ["No Deposit", "Non Refund", "Refundable", "Canceled", "Not Canceled"]
+
+    # Define custom colors for targets
+    custom_colors = {
+        "Not Canceled": "#377eb8",  # Medium-dark blue
+        "Canceled": "#a6cee3"       # Light blue
+    }
+
+    # Set node colors:
+    # - Default Plotly colors for sources
+    # - Custom colors for targets
+    node_colors = [
+        "#636EFA",  # Default Plotly color for No Deposit
+        "#EF553B",  # Default Plotly color for Non Refund
+        "#00CC96",  # Default Plotly color for Refundable
+        custom_colors["Canceled"],   # Custom light blue for Canceled
+        custom_colors["Not Canceled"]  # Custom medium-dark blue for Not Canceled
+    ]
+
+    # Define source, target, and value data for Sankey links
+    fig = go.Figure(data=[go.Sankey(
+        node=dict(
+            pad=15,
+            thickness=20,
+            line=dict(color="black", width=0.5),
+            label=node_labels,
+            color=node_colors  # Apply custom node colors
+        ),
+        link=dict(
+            source=[0, 1, 2, 0, 1, 2],  # Indices of source nodes
+            target=[3, 3, 3, 4, 4, 4],  # Indices of target nodes
+            value=sankey_data['count'].tolist(),  # Values for the links
+            color="rgba(150, 150, 150, 0.4)"  # Light transparent gray for flows
+        )
+    )])
+
+    # Update layout
+    fig.update_layout(
+        title_text="Reservation Flow by Deposit Type and Cancellation Status",
+        font_size=12,
+        paper_bgcolor='rgba(0,0,0,0)',  # Transparent background
     )
 
     return fig
