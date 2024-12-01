@@ -139,28 +139,82 @@ def deposit_type_piechart(df):
     return fig
 
 def deposit_type_barchart(df):
-        # Group data for the bar chart (cancellations per deposit type)
-    cancellations_by_deposit = df[df['is_canceled'] == 1].groupby('deposit_type').size().reset_index(name='cancellations')
+    # Map is_canceled to 'Canceled' or 'Not Canceled'
+    df['cancellation_status'] = df['is_canceled'].replace({0: 'Not Canceled', 1: 'Canceled'})
 
-    # Create the bar chart
-    fig = go.Figure(
-        data=[
-            go.Bar(
-                x=cancellations_by_deposit['deposit_type'],
-                y=cancellations_by_deposit['cancellations'],
-                marker=dict(color=px.colors.qualitative.Set2),  # Customize color scheme
-                text=cancellations_by_deposit['cancellations'],  # Show values on the bars
-                textposition='outside'  # Position of text
-            )
-        ]
+    # Group by deposit_type and cancellation_status
+    cancellations_by_deposit = df.groupby(['deposit_type', 'cancellation_status']).size().reset_index(name='count')
+    # Calculate the percentage for each deposit_type
+    total_by_deposit = cancellations_by_deposit.groupby('deposit_type')['count'].transform('sum')
+    cancellations_by_deposit['percentage'] = (cancellations_by_deposit['count'] / total_by_deposit) * 100
+
+    # Create the stacked bar chart
+    fig = px.bar(
+        cancellations_by_deposit,
+        x='deposit_type',
+        y='percentage',
+        color='cancellation_status',
+        barmode='stack',  # Stack bars for each deposit type
+        labels={
+            'deposit_type': 'Deposit Type',
+            'percentage': 'Percentage of Reservations',
+            'cancellation_status': 'Reservation Status',
+        },
+        category_orders= {
+            'cancellation_status':["Not Canceled", "Canceled"]
+        },
+        title='Reservations by Deposit Type and Cancellation Status'
     )
+
+    # Update layout for better appearance
     fig.update_layout(
-        title='Cancellations by Deposit Type',
-        xaxis_title='Deposit Type',
-        yaxis_title='Number of Cancellations',
         paper_bgcolor='rgba(0,0,0,0)',  # Transparent background
-        plot_bgcolor='rgba(0,0,0,0)',
-        yaxis=dict(gridcolor='lightgrey'),  # Add gridlines for better readability
+        plot_bgcolor='rgba(0,0,0,0)',  # Transparent plot area
+        yaxis=dict(title='Percentage of Reservations (%)', tickformat=".1f"),
+        xaxis=dict(title='Deposit Type'),
+        legend_title_text='Reservation Status'
     )
 
     return fig
+
+def lead_time_cancellation_heatmap(df):
+    # Group by lead_time and calculate cancellation rate
+    heatmap_data = df.groupby('lead_time')['is_canceled'].mean().reset_index()
+    heatmap_data['cancellation_rate'] = heatmap_data['is_canceled'] * 100
+
+    # Create heatmap
+    fig = px.density_heatmap(
+        heatmap_data,
+        x='lead_time',
+        y='cancellation_rate',
+        color_continuous_scale='RdBu',
+        labels={
+            'lead_time': 'Lead Time (Days)',
+            'cancellation_rate': 'Cancellation Rate (%)',
+        },
+        title='Cancellation Rate by Lead Time'
+    )
+
+    return fig
+
+def reservation_flow_sankey(df):
+    # Prepare data for Sankey
+    sankey_data = df.groupby(['deposit_type', 'is_canceled']).size().reset_index(name='count')
+
+    fig = go.Figure(data=[go.Sankey(
+        node=dict(
+            pad=15,
+            thickness=20,
+            line=dict(color="black", width=0.5),
+            label=["No Deposit", "Non Refund", "Refundable", "Canceled", "Not Canceled"]
+        ),
+        link=dict(
+            source=[0, 1, 2, 0, 1, 2],  # Deposit types
+            target=[3, 3, 3, 4, 4, 4],  # Canceled or not
+            value=sankey_data['count'].tolist(),
+        )
+    )])
+
+    fig.update_layout(title_text="Reservation Flow by Deposit Type and Cancellation Status")
+    return fig
+

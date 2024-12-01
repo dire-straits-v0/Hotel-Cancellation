@@ -28,6 +28,7 @@ slider_marks = {
     i: month.strftime("%Y-%m") for i, month in enumerate(unique_months) if i % 6 == 0
 }
 
+
 #df = df.dropna()
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
@@ -155,6 +156,13 @@ app.layout = html.Div(
                         ),
                     ],
                 ),
+                html.Hr(
+                    style={
+                        "border": "1px solid gray",  # Thin gray line
+                        "width": "95%",  # Slightly narrower than full width
+                        "margin": "20px auto",  # Center the line with some spacing
+                    }
+                ),
                 html.Div(
                     style={
                         "display": "flex",  # Use flexbox layout
@@ -173,6 +181,21 @@ app.layout = html.Div(
                             id="deposit-type-bar-chart",
                             figure=graphics.deposit_type_barchart(df),
                             style={"width": "45%"}  # Adjust width to fit side by side
+                        ),
+                    ],
+                ),
+                html.Div(
+                    style={
+                        "display": "flex",
+                        "flexDirection": "column",
+                        "alignItems": "center",
+                        "padding": "20px",
+                    },
+                    children=[
+                        dcc.Graph(
+                            id="reservation-flow-sankey",
+                            figure=graphics.reservation_flow_sankey(df),  # Call the function
+                            style={"width": "80%", "height": "500px"}  # Adjust graph size
                         ),
                     ],
                 ),
