@@ -8,8 +8,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 # Import layouts from separate files
-from callbacks.industry_callbacks import register_industry_callbacks
-from callbacks.industry_callbacks import register_lead_time_callbacks
+from callbacks.industry_callbacks import register_industry_callbacks, register_lead_time_callbacks, register_deposit_type_callbacks
 from callbacks.tabs_callback import register_tabs_callback
 
 from layouts.industry_info import industry_info_layout
@@ -165,37 +164,58 @@ app.layout = html.Div(
                 ),
                 html.Div(
                     style={
-                        "display": "flex",  # Use flexbox layout
-                        "justifyContent": "space-between",  # Ensure equal spacing between graphs
-                        "padding": "20px",  # Add padding around the container
-                    },
-                    children=[
-                        # Pie Chart
-                        dcc.Graph(
-                            id="deposit-type-pie-chart",
-                            figure=graphics.deposit_type_piechart(df),
-                            style={"width": "45%"}  # Adjust width to fit side by side
-                        ),
-                        # Bar Chart
-                        dcc.Graph(
-                            id="deposit-type-bar-chart",
-                            figure=graphics.deposit_type_barchart(df),
-                            style={"width": "45%"}  # Adjust width to fit side by side
-                        ),
-                    ],
-                ),
-                html.Div(
-                    style={
-                        "display": "flex",
-                        "flexDirection": "column",
-                        "alignItems": "center",
                         "padding": "20px",
                     },
                     children=[
-                        dcc.Graph(
-                            id="reservation-flow-sankey",
-                            figure=graphics.reservation_flow_sankey(df),  # Call the function
-                            style={"width": "80%", "height": "500px"}  # Adjust graph size
+                        html.H3(
+                            "Filter by Hotel Type",
+                            style={"textAlign": "center", "marginBottom": "20px", "color": "#333"},
+                            
+                        ),
+                        dcc.RadioItems(
+                            id="hotel-type-filter",
+                            options=[
+                                {"label": "City Hotel", "value": "City Hotel"},
+                                {"label": "Resort Hotel", "value": "Resort Hotel"},
+                                {"label": "Both", "value": "Both"},
+                            ],
+                            value="Both",  # Default value
+                            inline=True,  # Display horizontally
+                            style={"marginBottom": "20px", "textAlign": "center"},
+                        ),
+                        html.Div(
+                            style={
+                                "display": "flex",  # Use flexbox layout
+                                "justifyContent": "space-between",  # Ensure equal spacing between graphs
+                                "padding": "20px",  # Add padding around the container
+                            },
+                            
+                            children=[
+                                # Pie Chart
+                                dcc.Graph(
+                                    id="deposit-type-pie-chart",
+                                    style={"width": "45%"}  # Adjust width to fit side by side
+                                ),
+                                # Bar Chart
+                                dcc.Graph(
+                                    id="deposit-type-bar-chart",
+                                    style={"width": "45%"}  # Adjust width to fit side by side
+                                ),
+                            ],
+                        ),
+                        html.Div(
+                            style={
+                                "display": "flex",
+                                "flexDirection": "column",
+                                "alignItems": "center",
+                                "padding": "20px",
+                            },
+                            children=[
+                                dcc.Graph(
+                                    id="reservation-flow-sankey",
+                                    style={"width": "80%", "height": "500px"}  # Adjust graph size
+                                ),
+                            ],
                         ),
                     ],
                 ),
@@ -216,6 +236,7 @@ app.layout = html.Div(
 register_tabs_callback(app)
 register_industry_callbacks(app, df, reverse_month_mapping)
 register_lead_time_callbacks(app,df)
+register_deposit_type_callbacks(app,df)
 
 if __name__ == "__main__":
     app.run_server(debug=True)

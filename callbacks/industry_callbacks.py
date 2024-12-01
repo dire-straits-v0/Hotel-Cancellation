@@ -1,5 +1,6 @@
 from dash import Input, Output
 import plotly.graph_objects as go
+from src import graphics
 from src.graphics import hotel_reservation_evolution, lead_time_distribution
 from plotly.subplots import make_subplots
 
@@ -80,3 +81,26 @@ def register_lead_time_callbacks(app, df):
         )
 
         return fig
+
+def register_deposit_type_callbacks(app,df):
+    @app.callback(
+        [
+            Output("deposit-type-pie-chart", "figure"),
+            Output("deposit-type-bar-chart", "figure"),
+            Output("reservation-flow-sankey", "figure"),
+        ],
+        Input("hotel-type-filter", "value")
+    )
+    def update_graphs(hotel_type):
+        if hotel_type == "City Hotel":
+            filtered_df = df[df['hotel'] == "City Hotel"]
+        elif hotel_type == "Resort Hotel":
+            filtered_df = df[df['hotel'] == "Resort Hotel"]
+        else:  # Both
+            filtered_df = df
+
+        pie_chart = graphics.deposit_type_piechart(filtered_df)
+        bar_chart = graphics.deposit_type_barchart(filtered_df)
+        sankey_chart = graphics.reservation_flow_sankey_with_percentages(filtered_df)
+
+        return pie_chart, bar_chart, sankey_chart

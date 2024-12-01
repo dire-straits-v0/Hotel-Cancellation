@@ -117,65 +117,60 @@ def lead_time_distribution(df):
     
     return fig
 
-def deposit_type_piechart(df):
-    # Group data for the pie chart (total counts per deposit type)
-    deposit_type_counts = df['deposit_type'].value_counts().reset_index()
+
+def deposit_type_piechart(filtered_df):
+    deposit_type_counts = filtered_df['deposit_type'].value_counts().reset_index()
     deposit_type_counts.columns = ['deposit_type', 'count']
 
-    # Create the pie chart
     fig = px.pie(
         deposit_type_counts,
         names='deposit_type',
         values='count',
         title='Distribution of Deposit Types',
-        color_discrete_sequence=px.colors.sequential.RdBu  # Customize color scheme
+        color_discrete_sequence=px.colors.sequential.RdBu
     )
-    fig.update_traces(textinfo='percent+label')  # Show percentage and labels
+    fig.update_traces(textinfo='percent+label')
     fig.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',  # Transparent background
+        paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
     )
 
     return fig
 
-def deposit_type_barchart(df):
-    # Map is_canceled to 'Canceled' or 'Not Canceled'
-    df['cancellation_status'] = df['is_canceled'].replace({0: 'Not Canceled', 1: 'Canceled'})
+def deposit_type_barchart(filtered_df):
+    filtered_df['cancellation_status'] = filtered_df['is_canceled'].replace({0: 'Not Canceled', 1: 'Canceled'})
 
-    # Group by deposit_type and cancellation_status
-    cancellations_by_deposit = df.groupby(['deposit_type', 'cancellation_status']).size().reset_index(name='count')
-    # Calculate the percentage for each deposit_type
+    cancellations_by_deposit = filtered_df.groupby(['deposit_type', 'cancellation_status']).size().reset_index(name='count')
     total_by_deposit = cancellations_by_deposit.groupby('deposit_type')['count'].transform('sum')
     cancellations_by_deposit['percentage'] = (cancellations_by_deposit['count'] / total_by_deposit) * 100
 
-    # Create the stacked bar chart
     fig = px.bar(
         cancellations_by_deposit,
         x='deposit_type',
         y='percentage',
         color='cancellation_status',
-        barmode='stack',  # Stack bars for each deposit type
+        barmode='stack',
         labels={
             'deposit_type': 'Deposit Type',
             'percentage': 'Percentage of Reservations',
             'cancellation_status': 'Reservation Status',
         },
-        category_orders= {
-            'cancellation_status':["Not Canceled", "Canceled"]
+        category_orders={
+            'cancellation_status': ["Not Canceled", "Canceled"]
         },
         title='Reservations by Deposit Type and Cancellation Status'
     )
 
-    # Update layout for better appearance
     fig.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',  # Transparent background
-        plot_bgcolor='rgba(0,0,0,0)',  # Transparent plot area
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
         yaxis=dict(title='Percentage of Reservations (%)', tickformat=".1f"),
         xaxis=dict(title='Deposit Type'),
         legend_title_text='Reservation Status'
     )
 
     return fig
+
 
 def lead_time_cancellation_heatmap(df):
     # Group by lead_time and calculate cancellation rate
@@ -197,9 +192,8 @@ def lead_time_cancellation_heatmap(df):
 
     return fig
 
-def reservation_flow_sankey(df):
-    # Prepare data for Sankey
-    sankey_data = df.groupby(['deposit_type', 'is_canceled']).size().reset_index(name='count')
+def reservation_flow_sankey(filtered_df):
+    sankey_data = filtered_df.groupby(['deposit_type', 'is_canceled']).size().reset_index(name='count')
 
     fig = go.Figure(data=[go.Sankey(
         node=dict(
@@ -209,12 +203,61 @@ def reservation_flow_sankey(df):
             label=["No Deposit", "Non Refund", "Refundable", "Canceled", "Not Canceled"]
         ),
         link=dict(
-            source=[0, 1, 2, 0, 1, 2],  # Deposit types
-            target=[3, 3, 3, 4, 4, 4],  # Canceled or not
+            source=[0, 1, 2, 0, 1, 2],
+            target=[3, 3, 3, 4, 4, 4],
             value=sankey_data['count'].tolist(),
         )
     )])
 
     fig.update_layout(title_text="Reservation Flow by Deposit Type and Cancellation Status")
+    return fig
+
+def reservation_flow_sankey_with_percentages(df):
+    # Group data for Sankey diagram
+    sankey_data = df.groupby(['deposit_type', 'is_canceled']).size().reset_index(name='count')
+
+    # Calculate percentages for each link
+    total_count = sankey_data['count'].sum()
+    sankey_data['percentage'] = (sankey_data['count'] / total_count) * 100
+
+    # Prepare node and link data
+    deposit_types = sankey_data['deposit_type'].unique()
+    node_labels = list(deposit_types) + ["Canceled", "Not Canceled"]
+    deposit_indices = {name: idx for idx, name in enumerate(deposit_types)}
+    cancel_indices = {"Canceled": len(deposit_types), "Not Canceled": len(deposit_types) + 1}
+
+    # Create source and target mappings
+    sankey_data['source'] = sankey_data['deposit_type'].map(deposit_indices)
+    sankey_data['target'] = sankey_data['is_canceled'].map(lambda x: cancel_indices["Canceled"] if x == 1 else cancel_indices["Not Canceled"])
+
+    # Add percentage to hover text
+    sankey_data['hover_text'] = sankey_data.apply(
+        lambda row: f"{row['count']} ({row['percentage']:.1f}%)",
+        axis=1
+    )
+
+    # Create the Sankey diagram
+    fig = go.Figure(data=[go.Sankey(
+        node=dict(
+            pad=15,
+            thickness=20,
+            line=dict(color="black", width=0.5),
+            label=node_labels,
+        ),
+        link=dict(
+            source=sankey_data['source'],
+            target=sankey_data['target'],
+            value=sankey_data['count'],
+            customdata=sankey_data['hover_text'],  # Pass the hover text
+            hovertemplate='%{customdata}<extra></extra>',  # Display hover text
+        )
+    )])
+
+    # Update layout
+    fig.update_layout(
+        title_text="Reservation Flow by Deposit Type and Cancellation Status (with Percentages)",
+        font_size=10
+    )
+
     return fig
 
