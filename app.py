@@ -18,7 +18,7 @@ from layouts.industry_info import industry_info_layout
 from layouts.predict_cancellation import predict_cancellation_layout
 
 # Load your dataset
-file = "C:\\Users\\arias\\OneDrive - Universidad Pontificia Comillas\\AÑO 5\\Visualización\\Hotel Cancellation\\data\\clean_hotel_bookings.csv" 
+file = "data/clean_hotel_bookings.csv" 
 
 df = pd.read_csv(file)  # Adjust path as necessary
 
