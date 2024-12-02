@@ -50,7 +50,8 @@ form_model = form_model_data["model"]
 feature_names = form_model_data["feature_names"]
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
-#server = app.server
+
+server = app.server
 # Layout of the app
 app.layout = html.Div(
     [
