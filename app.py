@@ -319,7 +319,7 @@ app.layout = html.Div(
                                 dbc.Row(
                                     [
                                         dbc.Col(dbc.Label("Requested Parking Spaces"), width=4),
-                                        dbc.Col(dbc.Input(id="input-parking", type="number", value=1), width=8),
+                                        dbc.Col(dbc.Input(id="input-parking", type="number", value=0), width=8),
                                     ],
                                     className="mb-3",
                                 ),
@@ -351,7 +351,7 @@ app.layout = html.Div(
                                 dbc.Row(
                                     [
                                         dbc.Col(dbc.Label("Average Daily Rate (ADR)"), width=4),
-                                        dbc.Col(dbc.Input(id="input-adr", type="number", value=100), width=8),
+                                        dbc.Col(dbc.Input(id="input-adr", type="number", value=15), width=8),
                                     ],
                                     className="mb-3",
                                 ),
