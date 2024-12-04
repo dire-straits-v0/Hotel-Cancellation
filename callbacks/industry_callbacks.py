@@ -13,16 +13,13 @@ def register_industry_callbacks(app, df, reverse_month_mapping):
     def update_hotel_reservation_evolution(date_range):
         start_index, end_index = map(int, sorted(date_range))
 
-        # Map the indices to actual periods
         start_period = reverse_month_mapping[start_index]
         end_period = reverse_month_mapping[end_index]
 
-        # Filter the dataframe
         filtered_df = df[
             (df["arrival_month"] >= start_period) & (df["arrival_month"] <= end_period)
         ]
 
-        # Generate the graph
         return hotel_reservation_evolution(filtered_df)
     
 def register_lead_time_callbacks(app, df):
@@ -31,7 +28,6 @@ def register_lead_time_callbacks(app, df):
         Input('show-cancellations', 'value')
     )
     def update_lead_time_cancellation(show_cancellations):
-        # Pass the filtered DataFrame and flag to the visualization function
         show_cancel = 'show_cancelations' in show_cancellations
         return lead_time_distribution(df, show_cancellations=show_cancel)
 

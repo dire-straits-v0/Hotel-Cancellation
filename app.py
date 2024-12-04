@@ -8,69 +8,51 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-
-# Import layouts from separate files
 from callbacks.industry_callbacks import register_industry_callbacks, register_lead_time_callbacks, register_deposit_type_callbacks
 from callbacks.prediction_callbacks import register_prediction_callbacks
 from callbacks.tabs_callback import register_tabs_callback
-
 from layouts.industry_info import industry_info_layout
 from layouts.predict_cancellation import predict_cancellation_layout
 
-# Load your dataset
-file = "data/clean_hotel_bookings.csv" 
 
-df = pd.read_csv(file)  # Adjust path as necessary
+df = etl.load_data()
 
-df["arrival_date"] = pd.to_datetime(df["arrival_date"], errors="coerce")
-df["arrival_month"] = df["arrival_date"].dt.to_period("M")
 unique_months = sorted(df["arrival_month"].unique())
 reverse_month_mapping = {i: month for i, month in enumerate(unique_months)}
 slider_marks = {
     i: month.strftime("%Y-%m") for i, month in enumerate(unique_months) if i % 6 == 0
 }
 
+feature_importances, model_data, form_model_data = etl.load_model_data() 
 
-# Load pre-trained model and feature importances
-with open("src/feature_importances.pkl", "rb") as f:
-    feature_importances = pickle.load(f)
-
-with open("src/model.pkl", "rb") as f:
-    model_data = pickle.load(f)
-
-with open("src/form_model.pkl", "rb") as f:
-    form_model_data = pickle.load(f)
-
-# Load the saved graph
-feature_importance_graph = graphics.plot_feature_importances(feature_importances)
+#We get our model, metrics and form_model from here
 model = model_data["model"]
 metrics = model_data["metrics"]
-
 form_model = form_model_data["model"]
 feature_names = form_model_data["feature_names"]
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 
 server = app.server
-# Layout of the app
+
 app.layout = html.Div(
     [
-        # Header section
+        
         html.Div(
             children=[
                 html.H1(
                     "Hotel Cancellations",
                     style={
-                        "textAlign": "center",  # Center the title
-                        "margin": "0",  # Remove default margin
-                        "padding": "20px",  # Add padding for spacing
-                        "color": "#333",  # Slightly darker text for readability
+                        "textAlign": "center", 
+                        "margin": "0",  
+                        "padding": "20px",  
+                        "color": "#333",  
                     },
                 )
             ],
             style={
-                "backgroundColor": "#E4E4E4",  # Light gray background
-                "padding": "10px",  # Padding for the entire header
+                "backgroundColor": "#E4E4E4",  
+                "padding": "10px", 
             },
         ),
                 # Tabs
@@ -83,19 +65,19 @@ app.layout = html.Div(
             ],
             style={
                 "marginTop": "20px",
-                "backgroundColor": "#f8f9fa",  # Match header background
+                "backgroundColor": "#f8f9fa",  
             },
             parent_style={
-                "display": "flex",  # Ensures tabs align properly
-                "justifyContent": "center",  # Center tabs
+                "display": "flex", 
+                "justifyContent": "center",  
             },
         ),
-                # Industry Information Content (static but dynamically displayed)
+                # Industry Information Content
         html.Div(
             id="industry-info-content",
             style={
-                "display": "flex",  # Horizontal layout
-                "width": "100%",  # Ensure full width of the screen
+                "display": "flex",  
+                "width": "100%",  
             },
             children=[
                 # Left Container
@@ -137,10 +119,10 @@ app.layout = html.Div(
                         # Right Container (Graph 2)
                 html.Div(
                         style = {
-                            "display": "flex",  # Use flexbox layout
-                            "justifyContent": "space-between",  # Ensure equal spacing between graphs
+                            "display": "flex",
+                            "justifyContent": "space-between",  
                             "padding": "20px",
-                        },  # Add padding around the container},
+                        },  
                         children = [
                             dcc.Graph(
                                 id="hotel-reservation-evolution",
@@ -155,17 +137,17 @@ app.layout = html.Div(
                 ),
                 html.Hr(
                     style={
-                        "border": "1px solid gray",  # Thin gray line
-                        "width": "95%",  # Slightly narrower than full width
-                        "margin": "20px auto",  # Center the line with some spacing
+                        "border": "1px solid gray", 
+                        "width": "95%",  
+                        "margin": "20px auto", 
                     }
                 ),
                 html.Div(
                     style={
-                        "display": "flex",  # Flexbox layout
-                        "flexDirection": "column",  # Stack vertically
-                        "alignItems": "right",  # Center-align content horizontally
-                        "width": "100%",  # Full width
+                        "display": "flex", 
+                        "flexDirection": "column", 
+                        "alignItems": "right",  
+                        "width": "100%", 
                         "marginTop":"40px"
                     },
                     children = [
@@ -180,7 +162,7 @@ app.layout = html.Div(
                         html.Div(
                             style = {"marginTop":"40px", 
                                      "textAlign": "right",
-                                    "backgroundColor": "rgba(240, 240, 240, 0.8)",  # Optional light background
+                                    "backgroundColor": "rgba(240, 240, 240, 0.8)", 
                                     "borderRadius": "5px", 
                                      },
                             children = [
@@ -189,8 +171,8 @@ app.layout = html.Div(
                                     options=[
                                         {'label': 'Show Total Cancellations', 'value': 'show_cancelations'}
                                     ],
-                                    value=[],  # Default is unchecked
-                                    style={"display": "inline-block", "fontSize": "16px", "padding": "5px", "textAlign": "right"}  # Visible and styled
+                                    value=[], 
+                                    style={"display": "inline-block", "fontSize": "16px", "padding": "5px", "textAlign": "right"} 
                                 ),
                             ],
                         ),
@@ -200,14 +182,14 @@ app.layout = html.Div(
                         ),
                         html.Div(
                             style = {
-                                "display": "flex",  # Use flexbox layout
-                                "justifyContent": "space-between",  # Ensure equal spacing between graphs
+                                "display": "flex",  
+                                "justifyContent": "space-between",  
                                 "padding": "20px",
-                              },  # Add padding around the container},
+                              },  
                             children = [
                                 dcc.Graph(
                                     id="lead-time-cancellation-scatter",
-                                    figure=graphics.lead_time_cancellation_scatter(df),  # Call the scatter plot function
+                                    figure=graphics.lead_time_cancellation_scatter(df), 
                                     style={"width": "55%"}
                             ),
                                 dcc.Graph(
@@ -221,9 +203,9 @@ app.layout = html.Div(
                 ),
                 html.Hr(
                     style={
-                        "border": "1px solid gray",  # Thin gray line
-                        "width": "95%",  # Slightly narrower than full width
-                        "margin": "20px auto",  # Center the line with some spacing
+                        "border": "1px solid gray",  
+                        "width": "95%",
+                        "margin": "20px auto",
                     }
                 ),
                 html.Div(
@@ -246,28 +228,28 @@ app.layout = html.Div(
                                 {"label": "Resort Hotel", "value": "Resort Hotel"},
                                 {"label": "Both", "value": "Both"},
                             ],
-                            value="Both",  # Default value
-                            inline=True,  # Display horizontally
+                            value="Both",  
+                            inline=True,  
                             style={"marginBottom": "20px", "textAlign": "center", "padding": "10px"},
-                            inputStyle={"marginRight": "10px", "marginLeft": "10px"}  # Add space around each radio button
+                            inputStyle={"marginRight": "10px", "marginLeft": "10px"}
                         ),
                         html.Div(
                             style={
-                                "display": "flex",  # Use flexbox layout
-                                "justifyContent": "space-between",  # Ensure equal spacing between graphs
-                                "padding": "20px",  # Add padding around the container
+                                "display": "flex",  
+                                "justifyContent": "space-between", 
+                                "padding": "20px", 
                             },
                             
                             children=[
                                 # Pie Chart
                                 dcc.Graph(
                                     id="deposit-type-pie-chart",
-                                    style={"width": "45%"}  # Adjust width to fit side by side
+                                    style={"width": "45%"}  
                                 ),
                                 # Bar Chart
                                 dcc.Graph(
                                     id="deposit-type-bar-chart",
-                                    style={"width": "45%"}  # Adjust width to fit side by side
+                                    style={"width": "45%"} 
                                 ),
                             ],
                         ),
@@ -281,7 +263,7 @@ app.layout = html.Div(
                             children=[
                                 dcc.Graph(
                                     id="reservation-flow-sankey",
-                                    style={"width": "80%", "height": "500px"}  # Adjust graph size
+                                    style={"width": "80%", "height": "500px"}  
                                 ),
                             ],
                         ),
@@ -289,7 +271,7 @@ app.layout = html.Div(
                 ),
             ],
         ),
-        # Predict Your Cancellation Content (hidden by default)
+        # Predict Your Cancellation Content
         html.Div(
             id="predict-cancellation-content",
             style={"display": "none"},
@@ -306,7 +288,7 @@ app.layout = html.Div(
                         graphics.create_metrics_table(metrics), 
                         dcc.Graph(
                             id="feature-importance-graph",
-                            figure=feature_importance_graph),
+                            figure=graphics.plot_feature_importances(feature_importances)),
                     ],
                 ),
                 html.Div(
@@ -342,7 +324,7 @@ app.layout = html.Div(
                                                     {"label": "Non Refund", "value": "deposit_type_Non Refund"},
                                                     {"label": "Refundable", "value": "deposit_type_Refundable"},
                                                 ],
-                                                value="deposit_type_No Deposit",  # Default selection
+                                                value="deposit_type_No Deposit", 
                                             ),
                                             width=8,
                                         ),
@@ -363,7 +345,7 @@ app.layout = html.Div(
                                                 "Predict Cancellation", 
                                                 id="predict-button", 
                                                 color="primary",
-                                                style={"width": "100%"}  # Make the button span the full width
+                                                style={"width": "100%"} 
                                             ),
                                             width=12,
                                         ),
